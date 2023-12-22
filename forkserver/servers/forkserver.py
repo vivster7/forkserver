@@ -26,9 +26,10 @@ def forkserver(receiver: Connection, level: int) -> None:
         event = receiver.recv()
         logger.info(f"{level} received: {type(event).__name__}")
 
-        t = event.get_type()
+        t = event.type
         if t == "shutdown":
-            _shutdown(sender, level)
+            _forward_shutdown(sender, level)
+            _exit(level)
         elif t == "files_modified" and level == len(Checkpoint):
             _run_test()
         elif t == "files_modified" and _should_forward(sender, event, level):
@@ -51,11 +52,15 @@ def _run_test() -> None:
     ctx.Process(target=execute_test, daemon=True).start()
 
 
-def _shutdown(sender: Optional[Connection], level: int) -> None:
-    logger.info(f"shutting down checkpoint server: {level}")
+def _forward_shutdown(sender: Optional[Connection], level: int) -> None:
     if sender:
+        logger.info(f"forwarding shutdown {level} -> {level+ 1}")
         sender.send((ShutdownEvent()))
         sender.close()
+
+
+def _exit(level: int) -> None:
+    logger.info(f"shutting down checkpoint server: {level}")
     sys.exit(0)
 
 
@@ -78,10 +83,7 @@ def _should_forward(
 def _respawn(
     old_sender: Optional[Connection], event: FilesModifiedEvent, level: int
 ) -> Connection:
-    if old_sender:
-        logger.info(f"shutting down next level {level} -> {level+ 1}")
-        old_sender.send((ShutdownEvent()))
-        old_sender.close()
+    _forward_shutdown(old_sender, level)
 
     load_modules_in_checkpoint(level)
 

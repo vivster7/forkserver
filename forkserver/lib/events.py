@@ -1,22 +1,19 @@
 from dataclasses import dataclass
+from typing import ClassVar
 
 
 @dataclass
 class ShutdownEvent:
-    @classmethod
-    def get_type(cls):
-        return "shutdown"
+    type: ClassVar[str] = "shutdown"
 
 
 @dataclass
 class FilesModifiedEvent:
-    @classmethod
-    def get_type(cls):
-        return "files_modified"
-
+    type: ClassVar[str] = "files_modified"
     files: list[str]
 
 
 @dataclass
 class CommandEvent:
+    type: ClassVar[str] = "command"
     command: str
