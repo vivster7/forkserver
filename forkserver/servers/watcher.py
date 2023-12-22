@@ -32,7 +32,7 @@ def on_events_callback(
     queue.put(event)
 
 
-def watchdog_server(queue: SimpleQueue) -> None:
+def watcher(queue: SimpleQueue) -> None:
     path = sys.argv[1] if len(sys.argv) > 1 else "."
     event_debouncer = EventDebouncer(
         debounce_interval_seconds=0.3,
