@@ -41,12 +41,27 @@ def forkserver(receiver: Connection, level: int) -> None:
 
 def _run_command(event: Union[CommandEvent, FilesModifiedEvent]) -> None:
     def execute_test() -> None:
+        import os
         import runpy
         import sys
 
         if getattr(event, "command", None) is not None:
-            sys.argv[:] = shlex.split(event.command)
-            runpy._run_module_as_main(sys.argv[0], alter_argv=False)
+            # Possiblilites:
+            # 1. app.py
+            # 2. app
+            # 3. -m app
+            command = shlex.split(event.command)
+            if not command:
+                return
+            if os.path.exists(command[0]):
+                canon = os.path.normcase(os.path.abspath(command[0]))
+                sys.argv[:] = [canon] + command[1:]
+                runpy.run_path(canon, run_name="__main__")
+            else:
+                if command[0] == "-m":
+                    command = command[1:]
+                sys.argv[:] = command
+                runpy._run_module_as_main(command[0], alter_argv=False)
             write_modules_to_checkpoints()
 
     ctx.Process(target=execute_test, daemon=True).start()
