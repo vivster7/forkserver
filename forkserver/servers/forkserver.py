@@ -50,9 +50,12 @@ def _run_command(event: Union[CommandEvent, FilesModifiedEvent]) -> None:
             # 1. app.py
             # 2. app
             # 3. -m app
+            # 3. -- app.py
             command = shlex.split(event.command)
             if not command:
                 return
+            if command[0] == "--":
+                command = command[1:]
             if os.path.exists(command[0]):
                 canon = os.path.normcase(os.path.abspath(command[0]))
                 sys.argv[:] = [canon] + command[1:]
