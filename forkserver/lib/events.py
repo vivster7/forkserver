@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import ClassVar
+from typing import ClassVar, Optional
 
 
 @dataclass
@@ -11,6 +11,7 @@ class ShutdownEvent:
 class FilesModifiedEvent:
     type: ClassVar[str] = "files_modified"
     files: list[str]
+    command: Optional[str] = None
 
 
 @dataclass

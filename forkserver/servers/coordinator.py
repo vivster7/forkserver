@@ -6,6 +6,7 @@ import time
 
 from forkserver.lib.context import ctx
 from forkserver.servers.forkserver import forkserver
+from forkserver.servers.http import http
 from forkserver.servers.watcher import watcher
 
 logger = logging.getLogger(__name__)
@@ -18,11 +19,13 @@ def coordinator() -> None:
 
     queue = ctx.SimpleQueue()
 
-    wd = ctx.Process(target=watcher, args=(queue,))
-    ff = ctx.Process(target=forwarder, args=(queue,))
+    ws = ctx.Process(target=watcher, args=(queue,))
+    fs = ctx.Process(target=forwarder, args=(queue,))
+    hs = ctx.Process(target=http, args=(queue,))
 
-    wd.start()
-    ff.start()
+    ws.start()
+    fs.start()
+    hs.start()
 
     try:
         while True:
@@ -32,18 +35,27 @@ def coordinator() -> None:
         os.killpg(pgid, signal.SIGTERM)
     finally:
         # Everythings probably dead, but just in case...
-        wd.stop()
-        ff.stop()
-        wd.join()
-        ff.join()
+        ws.stop()
+        fs.stop()
+        hs.stop()
+        ws.join()
+        fs.join()
+        hs.join()
 
 
 def forwarder(queue: multiprocessing.SimpleQueue) -> None:
-    """Fowards events from watcher to forkserver."""
+    """Fowards events from queue to forkserver."""
     receiver, sender = ctx.Pipe(duplex=False)
     cs = ctx.Process(target=forkserver, args=(receiver, 0))
     cs.start()
+    last_command: str = None
     while True:
         event = queue.get()
+        # Attach 'last_command' to files_modified events.
+        if event.type == "command":
+            last_command = event.command
+        elif event.type == "files_modified":
+            if last_command:
+                event.command = last_command
         logger.info(f"got event: {type(event).__name__}")
         sender.send(event)

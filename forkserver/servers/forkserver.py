@@ -1,9 +1,8 @@
 import logging
+import shlex
 import sys
 from multiprocessing.connection import Connection
-from typing import Optional
-
-import pytest
+from typing import Optional, Union
 
 from forkserver.lib.checkpoint import (
     Checkpoint,
@@ -12,7 +11,7 @@ from forkserver.lib.checkpoint import (
     write_modules_to_checkpoints,
 )
 from forkserver.lib.context import ctx
-from forkserver.lib.events import FilesModifiedEvent, ShutdownEvent
+from forkserver.lib.events import CommandEvent, FilesModifiedEvent, ShutdownEvent
 from forkserver.lib.filename_to_module import filename_to_module
 
 logger = logging.getLogger(__name__)
@@ -30,24 +29,25 @@ def forkserver(receiver: Connection, level: int) -> None:
         if t == "shutdown":
             _forward_shutdown(sender, level)
             _exit(level)
-        elif t == "files_modified" and level == len(Checkpoint):
-            _run_test()
-        elif t == "files_modified" and _should_forward(sender, event, level):
+        elif level == len(Checkpoint):
+            _run_command(event)
+        elif _should_forward(sender, event, level):
             _forward(sender, event)
-        elif t == "files_modified":
-            sender = _respawn(sender, event, level)
         else:
-            raise ValueError(f"unknown event: {t}")
+            sender = _respawn(sender, event, level)
+        # else:
+        #     raise ValueError(f"unknown event: {t}")
 
 
-def _run_test() -> None:
+def _run_command(event: Union[CommandEvent, FilesModifiedEvent]) -> None:
     def execute_test() -> None:
-        # os.execvp(sys.argv[0], sys.argv)
-        exit_code = pytest.main(
-            ["-s", "-v", "-Wignore::pytest.PytestAssertRewriteWarning", "tests/slow.py"]
-        )
-        write_modules_to_checkpoints()
-        return exit_code
+        import runpy
+        import sys
+
+        if getattr(event, "command", None) is not None:
+            sys.argv[:] = shlex.split(event.command)
+            runpy._run_module_as_main(sys.argv[0], alter_argv=False)
+            write_modules_to_checkpoints()
 
     ctx.Process(target=execute_test, daemon=True).start()
 
@@ -72,12 +72,15 @@ def _forward(sender: Connection, event: FilesModifiedEvent) -> None:
 def _should_forward(
     sender: Optional[Connection], event: FilesModifiedEvent, level: int
 ) -> bool:
-    modules = [filename_to_module(f) for f in event.files]
-    return (
-        sender is not None
-        and level + 1 < len(checkpoints)
-        and all(m not in checkpoints[level + 1] for m in modules)
-    )
+    if sender is None:
+        return False
+    if event.type == "command":
+        return True
+    elif event.type == "files_modified":
+        modules = [filename_to_module(f) for f in event.files]
+        return level + 1 < len(checkpoints) and all(
+            m not in checkpoints[level + 1] for m in modules
+        )
 
 
 def _respawn(
