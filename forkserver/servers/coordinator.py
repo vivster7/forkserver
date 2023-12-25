@@ -1,10 +1,13 @@
 import logging
 import multiprocessing
 import os
+import shlex
 import signal
+import sys
 import time
 
 from forkserver.lib.context import ctx
+from forkserver.lib.events import CommandEvent
 from forkserver.servers.forkserver import forkserver
 from forkserver.servers.http import http
 from forkserver.servers.watcher import watcher
@@ -19,13 +22,16 @@ def coordinator() -> None:
 
     queue = ctx.SimpleQueue()
 
-    ws = ctx.Process(target=watcher, args=(queue,))
     fs = ctx.Process(target=forwarder, args=(queue,))
     hs = ctx.Process(target=http, args=(queue,))
+    ws = ctx.Process(target=watcher, args=(queue,))
 
     ws.start()
     fs.start()
     hs.start()
+
+    if len(sys.argv) > 1:
+        queue.put(CommandEvent(shlex.join(sys.argv[1:])))
 
     try:
         while True:

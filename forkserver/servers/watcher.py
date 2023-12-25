@@ -33,7 +33,7 @@ def on_events_callback(
 
 
 def watcher(queue: SimpleQueue) -> None:
-    path = sys.argv[1] if len(sys.argv) > 1 else "."
+    path = "."
     event_debouncer = EventDebouncer(
         debounce_interval_seconds=0.3,
         events_callback=partial(on_events_callback, queue=queue),
