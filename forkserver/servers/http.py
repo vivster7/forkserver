@@ -34,5 +34,4 @@ def http(q: multiprocessing.SimpleQueue) -> None:
     queue = q
     server_address = ("", 7384)
     httpd = HTTPServer(server_address, CommandHandler)
-    print("Starting server...")
     httpd.serve_forever()

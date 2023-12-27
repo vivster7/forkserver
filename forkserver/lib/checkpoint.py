@@ -38,7 +38,7 @@ def write_modules_to_checkpoints() -> None:
 
 
 def load_modules_in_checkpoint(cp: Checkpoint) -> None:
-    logger.info(f"loading modules at {cp}")
+    logger.debug(f"loading modules at {cp}")
 
     if not get_file(cp).exists():
         return
@@ -51,7 +51,7 @@ def load_modules_in_checkpoint(cp: Checkpoint) -> None:
         to_remove.add(module)
 
     if to_remove:
-        logger.info(f"removing modules: {to_remove}")
+        logger.debug(f"removing modules: {to_remove}")
         modules = [m for m in modules if m not in to_remove]
         get_file(cp).write_text("\n".join(modules))
 

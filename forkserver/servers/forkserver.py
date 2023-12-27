@@ -18,12 +18,12 @@ logger = logging.getLogger(__name__)
 
 
 def forkserver(receiver: Connection, level: int) -> None:
+    logger.info(f"starting forkserver: {level}")
     sender = None
-    logger.info(f"starting checkpoint server: {level}")
     while True:
-        logger.info(f"{level} waiting...")
+        logger.debug(f"{level} waiting...")
         event = receiver.recv()
-        logger.info(f"{level} received: {type(event).__name__}")
+        logger.debug(f"{level} received: {type(event).__name__}")
 
         t = event.type
         if t == "shutdown":
@@ -72,18 +72,18 @@ def _run_command(event: Union[CommandEvent, FilesModifiedEvent]) -> None:
 
 def _forward_shutdown(sender: Optional[Connection], level: int) -> None:
     if sender:
-        logger.info(f"forwarding shutdown {level} -> {level+ 1}")
+        logger.debug(f"forwarding shutdown {level} -> {level+ 1}")
         sender.send((ShutdownEvent()))
         sender.close()
 
 
 def _exit(level: int) -> None:
-    logger.info(f"shutting down checkpoint server: {level}")
+    logger.debug(f"shutting down checkpoint server: {level}")
     sys.exit(0)
 
 
 def _forward(sender: Connection, event: FilesModifiedEvent) -> None:
-    logger.info(f"forwarding {type(event).__name__}")
+    logger.debug(f"forwarding {type(event).__name__}")
     sender.send(event)
 
 
@@ -108,7 +108,7 @@ def _respawn(
 
     load_modules_in_checkpoint(level)
 
-    logger.info(f"starting next {level} -> {level + 1}")
+    logger.debug(f"starting next {level} -> {level + 1}")
     receiver, sender = ctx.Pipe(duplex=False)
     child = ctx.Process(target=forkserver, args=(receiver, level + 1))
     child.start()

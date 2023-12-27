@@ -3,7 +3,9 @@
 Code mostly taken from pdb.py.
 
 Usage:
-  python -m forkserver.compose -m forkserver.compose -m http.server
+  >> python -m compose -m compose -m http.server
+  Composing...
+  Composing...
 """
 
 #! /usr/bin/env python3
@@ -192,5 +194,5 @@ def main():
 
 # When invoked as main program, invoke the debugger on a script
 if __name__ == "__main__":
-    print("Composing..")
+    print("Composing...")
     main()

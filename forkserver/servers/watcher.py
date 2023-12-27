@@ -28,7 +28,7 @@ def on_events_callback(
     queue: SimpleQueue,
 ) -> None:
     event = FilesModifiedEvent({event.src_path for event in events})
-    logger.info(f"put event: {event}")
+    logger.debug(f"put event: {event}")
     queue.put(event)
 
 

@@ -63,5 +63,5 @@ def forwarder(queue: multiprocessing.SimpleQueue) -> None:
         elif event.type == "files_modified":
             if last_command:
                 event.command = last_command
-        logger.info(f"got event: {type(event).__name__}")
+        logger.debug(f"got event: {type(event).__name__}")
         sender.send(event)
