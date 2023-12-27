@@ -11,10 +11,10 @@ class ShutdownEvent:
 class FilesModifiedEvent:
     type: ClassVar[str] = "files_modified"
     files: list[str]
-    command: Optional[str] = None
+    command: list[str]
 
 
 @dataclass
 class CommandEvent:
     type: ClassVar[str] = "command"
-    command: str
+    command: list[str]

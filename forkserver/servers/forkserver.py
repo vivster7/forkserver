@@ -1,5 +1,4 @@
 import logging
-import shlex
 import sys
 from multiprocessing.connection import Connection
 from typing import Optional, Union
@@ -47,24 +46,25 @@ def _run_command(event: Union[CommandEvent, FilesModifiedEvent]) -> None:
 
         if getattr(event, "command", None) is not None:
             # Possiblilites:
-            # 1. app.py
-            # 2. app
-            # 3. -m app
-            # 3. -- app.py
-            command = shlex.split(event.command)
+            # 1. pytest tests/fast.py
+            # 2. python -m pytest tests/fast.py
+            # 3. python tests/fast.py
+            command = event.command
             if not command:
                 return
-            if command[0] == "--":
-                command = command[1:]
-            if os.path.exists(command[0]):
-                canon = os.path.normcase(os.path.abspath(command[0]))
-                sys.argv[:] = [canon] + command[1:]
-                runpy.run_path(canon, run_name="__main__")
-            else:
-                if command[0] == "-m":
-                    command = command[1:]
+
+            if command[:2] == ["python", "-m"]:
+                sys.argv[:] = command[2:]
+                runpy._run_module_as_main(command[2], alter_argv=False)
+            elif command[0] != "python":
                 sys.argv[:] = command
                 runpy._run_module_as_main(command[0], alter_argv=False)
+            elif command[0] == "python":
+                # TODO: Handle other args to python like -0.
+                canon = os.path.normcase(os.path.abspath(command[1]))
+                sys.argv[:] = [canon] + command[2:]
+                runpy.run_path(canon, run_name="__main__")
+
             write_modules_to_checkpoints()
 
     ctx.Process(target=execute_test, daemon=True).start()

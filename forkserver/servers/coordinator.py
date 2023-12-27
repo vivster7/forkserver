@@ -1,10 +1,10 @@
 import logging
 import multiprocessing
 import os
-import shlex
 import signal
 import sys
 import time
+from typing import Optional
 
 from forkserver.lib.context import ctx
 from forkserver.lib.events import CommandEvent
@@ -15,7 +15,7 @@ from forkserver.servers.watcher import watcher
 logger = logging.getLogger(__name__)
 
 
-def coordinator() -> None:
+def coordinator(command: list[str], timeout: Optional[int] = None) -> None:
     # Set a process group id so that we can kill all processes in the group on exit.
     pgid = os.getpid()
     os.setpgid(os.getpid(), pgid)
@@ -31,11 +31,16 @@ def coordinator() -> None:
     hs.start()
 
     if len(sys.argv) > 1:
-        queue.put(CommandEvent(shlex.join(sys.argv[1:])))
+        queue.put(CommandEvent(command))
+
+    elapsed = 0
 
     try:
         while True:
             time.sleep(1)
+            elapsed += 1
+            if timeout and elapsed >= timeout:
+                raise KeyboardInterrupt("Timeout expired")
     except KeyboardInterrupt:
         # Catch the first ctrl+c and try and kill the entire process group
         os.killpg(pgid, signal.SIGTERM)
@@ -54,7 +59,7 @@ def forwarder(queue: multiprocessing.SimpleQueue) -> None:
     receiver, sender = ctx.Pipe(duplex=False)
     cs = ctx.Process(target=forkserver, args=(receiver, 0))
     cs.start()
-    last_command: str = None
+    last_command: list[str] = []
     while True:
         event = queue.get()
         # Attach 'last_command' to files_modified events.
