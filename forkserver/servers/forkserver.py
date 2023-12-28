@@ -7,7 +7,6 @@ from forkserver.lib.checkpoint import (
     Checkpoint,
     checkpoints,
     load_modules_in_checkpoint,
-    write_modules_to_checkpoints,
 )
 from forkserver.lib.context import ctx
 from forkserver.lib.events import CommandEvent, FilesModifiedEvent, ShutdownEvent
@@ -41,14 +40,34 @@ def forkserver(receiver: Connection, level: int) -> None:
 def _run_command(event: Union[CommandEvent, FilesModifiedEvent]) -> None:
     def execute_test() -> None:
         import os
+        import pathlib
         import runpy
         import sys
+
+        # TODO: This probably needs to be optimized.
+        class CustomFinder:
+            def __init__(self):
+                self.f = pathlib.Path(".forkserver_cache/imported_modules")
+                self.f.parent.mkdir(parents=True, exist_ok=True)
+
+            def find_spec(self, fullname, path, target=None):
+                # Importing flask.__main__ causes the import process to be swapped out?
+                if fullname.endswith("__main__"):
+                    return None
+                with self.f.open("a") as f:
+                    f.write(f"{fullname}\n")
+                # Return None to continue with the normal import process
+                return None
+
+        custom_finder = CustomFinder()
+        sys.meta_path.insert(0, custom_finder)
 
         if getattr(event, "command", None) is not None:
             # Possiblilites:
             # 1. pytest tests/fast.py
             # 2. python -m pytest tests/fast.py
             # 3. python tests/fast.py
+            # 4. (unsupported) python -0 tests/fast.py
             command = event.command
             if not command:
                 return
@@ -64,8 +83,6 @@ def _run_command(event: Union[CommandEvent, FilesModifiedEvent]) -> None:
                 canon = os.path.normcase(os.path.abspath(command[1]))
                 sys.argv[:] = [canon] + command[2:]
                 runpy.run_path(canon, run_name="__main__")
-
-            write_modules_to_checkpoints()
 
     ctx.Process(target=execute_test, daemon=True).start()
 

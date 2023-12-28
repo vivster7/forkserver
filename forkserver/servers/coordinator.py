@@ -6,6 +6,7 @@ import sys
 import time
 from typing import Optional
 
+from forkserver.lib.checkpoint import write_modules_to_checkpoints
 from forkserver.lib.context import ctx
 from forkserver.lib.events import CommandEvent
 from forkserver.servers.forkserver import forkserver
@@ -62,6 +63,7 @@ def forwarder(queue: multiprocessing.SimpleQueue) -> None:
     last_command: list[str] = []
     while True:
         event = queue.get()
+        write_modules_to_checkpoints()
         # Attach 'last_command' to files_modified events.
         if event.type == "command":
             last_command = event.command
