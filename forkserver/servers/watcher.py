@@ -1,6 +1,4 @@
 import logging
-import sys
-import time
 from functools import partial
 from multiprocessing import SimpleQueue
 

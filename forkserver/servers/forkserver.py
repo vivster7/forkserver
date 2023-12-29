@@ -47,7 +47,7 @@ def _run_command(event: Union[CommandEvent, FilesModifiedEvent]) -> None:
         # TODO: This probably needs to be optimized.
         class CustomFinder:
             def __init__(self):
-                self.f = pathlib.Path(".forkserver_cache/imported_modules")
+                self.f = pathlib.Path(".forkserver_cache/imported_modules.txt")
                 self.f.parent.mkdir(parents=True, exist_ok=True)
 
             def find_spec(self, fullname, path, target=None):

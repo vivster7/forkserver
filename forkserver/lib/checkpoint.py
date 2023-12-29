@@ -30,7 +30,8 @@ CACHEDIR.mkdir(parents=True, exist_ok=True)
 
 def write_modules_to_checkpoints() -> None:
     d = defaultdict(list)
-    f = CACHEDIR / "imported_modules"
+    # imported_modules.txt gets written as the 'command' executes.
+    f = CACHEDIR / "imported_modules.txt"
     if not f.exists():
         return
 
