@@ -72,6 +72,8 @@ def _run_command(event: Union[CommandEvent, FilesModifiedEvent]) -> None:
             if not command:
                 return
 
+            logger.debug(f"running command: {command}")
+
             if command[:2] == ["python", "-m"]:
                 sys.argv[:] = command[2:]
                 runpy._run_module_as_main(command[2], alter_argv=False)
