@@ -1,0 +1,2 @@
+- [] Maybe. Use a more general Python compose function and just execute the passed in command. (e.g. python -m logimports -- <cmd>)
+- [] Do not watch files in .gitignore (can upstream this patch)
