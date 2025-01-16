@@ -1,6 +1,6 @@
 [project]
 name = "forkserver"
-version = "0.1.0"
+version = "0.1.1"
 description="A pytest plugin for forkserver functionality."
 readme = "README.md"
 requires-python = ">=3.9"
@@ -9,6 +9,13 @@ classifiers = [
     "Framework :: Pytest",
 ]
 
+[project.scripts]
+forkserver = "forkserver.__main__:main"
+
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+
+[tool.hatch.build.targets.wheel]
+packages = ["forkserver"]
