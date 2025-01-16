@@ -1,7 +1,5 @@
 import logging
 import multiprocessing
-import os
-import signal
 import sys
 import time
 from typing import Optional
@@ -13,14 +11,11 @@ from forkserver.servers.forkserver import forkserver
 from forkserver.servers.http import http
 from forkserver.servers.watcher import watcher
 
+
 logger = logging.getLogger(__name__)
 
 
 def coordinator(command: list[str], timeout: Optional[int] = None) -> None:
-    # Set a process group id so that we can kill all processes in the group on exit.
-    pgid = os.getpid()
-    os.setpgid(os.getpid(), pgid)
-
     queue = ctx.SimpleQueue()
 
     fs = ctx.Process(target=forwarder, args=(queue,))
@@ -42,14 +37,11 @@ def coordinator(command: list[str], timeout: Optional[int] = None) -> None:
             elapsed += 1
             if timeout and elapsed >= timeout:
                 raise KeyboardInterrupt("Timeout expired")
-    except KeyboardInterrupt:
-        # Catch the first ctrl+c and try and kill the entire process group
-        os.killpg(pgid, signal.SIGTERM)
     finally:
         # Everythings probably dead, but just in case...
-        ws.stop()
-        fs.stop()
-        hs.stop()
+        ws.kill()
+        fs.kill()
+        hs.kill()
         ws.join()
         fs.join()
         hs.join()

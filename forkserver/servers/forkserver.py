@@ -91,7 +91,7 @@ def _run_command(event: Union[CommandEvent, FilesModifiedEvent]) -> None:
 
 def _forward_shutdown(sender: Optional[Connection], level: int) -> None:
     if sender:
-        logger.debug(f"forwarding shutdown {level} -> {level+ 1}")
+        logger.debug(f"forwarding shutdown {level} -> {level + 1}")
         sender.send((ShutdownEvent()))
         sender.close()
 

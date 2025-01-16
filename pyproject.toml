@@ -1,6 +1,6 @@
 [project]
 name = "forkserver"
-version = "0.1.1"
+version = "0.1.2"
 description="A pytest plugin for forkserver functionality."
 readme = "README.md"
 requires-python = ">=3.9"
