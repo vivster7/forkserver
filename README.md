@@ -27,7 +27,9 @@ def test_add():
 
 Then a simple `test_add()` which should take a few milliseconds to execute will take 10+ seconds to run. And we'll have to wait 10+ seconds every time we edit the test file and want to re-run the test. That's pretty frustrating.
 
-What if we could cache the `import server` step? Then we'd only have to load it once, and we'd be able to iterate on the test code much more quickly. That's the core idea behind preloading. In practice, we can achieve this cache effect by loading `import server` in a parent process and then forking a child process to run the test. The Unix process model uses a copy-on-write strategy, so the child process will have read-access to a portion of memory that has already evaluated the code `import server`. Now, the child process can re-run the test without having to pay the 10 second penalty to run `import server`. Specifically in Python, when the child process evaluates the line `import server`, it'll immediately find an existing entry in the module cache (the module cache is why running `import server` twice doesn't take 20 seconds, the second invocation is a cache lookup).
+What if we could cache the `import server` step? Then we'd only have to load it once, and we'd be able to iterate on the test code much more quickly. That's the core idea behind preloading. 
+
+In practice, we can achieve this cache effect by loading `import server` in a parent process and then forking a child process to run the test. The Unix process model uses a copy-on-write strategy, so the child process will have read-access to a portion of memory that has already evaluated the code `import server`. Now, the child process can re-run the test without having to pay the 10 second penalty to run `import server`. 
 
 Pictorially, this kind of looks like:
 <img width="777" alt="Screenshot 2025-01-16 at 10 00 46 PM" src="https://github.com/user-attachments/assets/47c0fc13-6959-40dc-8fec-ac763dd984ae" />
@@ -54,7 +56,7 @@ The file watcher and HTTP server are fairly straightforward. The multiple checkp
 
 If you only change a test file, you can resume at checkpoint #3. If you change some application code, you can resume at checkpoint #2. If you change the 3rd party packages, you can resume at checkpoint #1.
 
-Currently, this configuration only lives in code, but a good future project would be to make this configuration declarative and read from a config file.
+Currently, the configuration for three distinct checkpoints lives in code, but a good future project would be to make this configuration declarative and read from a config file.
 
 ## Known caveats
 
