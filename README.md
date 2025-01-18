@@ -30,7 +30,7 @@ Then a simple `test_add()` which should take a few milliseconds to execute will 
 What if we could cache the `import server` step? Then we'd only have to load it once, and we'd be able to iterate on the test code much more quickly. That's the core idea behind preloading. In practice, we can achieve this cache effect by loading `import server` in a parent process and then forking a child process to run the test. The Unix process model uses a copy-on-write strategy, so the child process will have read-access to a portion of memory that has already evaluated the code `import server`. Now, the child process can re-run the test without having to pay the 10 second penalty to run `import server`. Specifically in Python, when the child process evaluates the line `import server`, it'll immediately find an existing entry in the module cache (the module cache is why running `import server` twice doesn't take 20 seconds, the second invocation is a cache lookup).
 
 Pictorially, this kind of looks like:
-![Diagram of a process forking and sharing read-only memory](image.png)
+<img width="777" alt="Screenshot 2025-01-16 at 10 00 46 PM" src="https://github.com/user-attachments/assets/47c0fc13-6959-40dc-8fec-ac763dd984ae" />
 
 ## How forkserver works
 
@@ -43,7 +43,8 @@ Forkserver adds three capabilities on top of basic application preloading:
 These capabilities communicate through a top-level coordination server.
 
 The process tree looks like:
-![Tree diagram showing process hierarchy.](image.png)
+<img width="769" alt="Screenshot 2025-01-17 at 9 23 43 AM" src="https://github.com/user-attachments/assets/4f0b9a52-d845-45c1-9806-767a32dd0fe4" />
+
 
 The file watcher and HTTP server are fairly straightforward. The multiple checkpoints feature is a bit more novel. In the example above describing preloading, we have a single checkpoint after preloading the line `import server`. The checkpoint is created by loading some code, forking a child process, and keeping the parent process alive as a saved checkpoint. Well, we can just apply this same idea multiple times when loading a single application. The default configuration for `forkserver` is to use 3 checkpoints:
 
