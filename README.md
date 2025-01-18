@@ -57,6 +57,7 @@ Currently, this configuration only lives in code, but a good future project woul
 
 ## Known caveats
 
+- The first invocation of `forkserver -- pytest tests/unit` will not be configured correctly to use checkpoints. ctrl+c and restarting the process will fix this. This happens because we use the first invocation to figure out which Python modules to load at each checkpoint (this lives in the `.forkserver_cache/ directory).
 - Only works on unix-like systems (Linux, macOS, BSD, etc.) that uses a copy-on-write strategy for forked processes.
 - Threading is not fork-safe, so make sure to only start threads after the last checkpoint is loaded.
 - The file watcher currently listens to too many files (doesn't respect .gitignore)
